@@ -1,0 +1,78 @@
+// ==UserScript==
+// @name         Clipboard Hijack Detector + Warn (Fake CAPTCHA / ClickFix)
+// @namespace    https://example.com
+// @version      1.3
+// @description  Detects & warns on suspicious PowerShell/mshta commands being written to clipboard
+// @author       Grok
+// @match        *://*/*
+// @run-at       document-start
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    const SUSPICIOUS_PATTERNS = [
+        /rundll32/i,
+        /powershell/i,
+        /mshta/i,
+        /wscript/i,
+        /curl/i,
+        /wget/i,
+        /iex/i,
+        /invoke-webrequest/i,
+        /iwr\s+-use/i,
+        /-w\s+hidden/i,
+        /-ep\s+bypass/i,
+        /-e[cn]\s+[a-z0-9+/=]{20,}/i,
+        /frombase64string/i,
+        /http[s]?:\/\/[^ ]+\.(ps1|exe|bat|js|vbs|hta)/i,
+        /syncappvpublishingserver/i,
+        /clickfix/i,
+        /verification.*(run|paste|win\+r)/i
+    ];
+
+    function looksMalicious(text) {
+        if (!text || typeof text !== 'string' || text.length < 20) return false;
+        return SUSPICIOUS_PATTERNS.some(re => re.test(text));
+    }
+
+    // ───────────── Modern API interception ─────────────
+    if (navigator?.clipboard) {
+        const originalWrite = navigator.clipboard.writeText;
+        navigator.clipboard.writeText = function(text) {
+            if (looksMalicious(text)) {
+                console.warn('[CLIPBOARD DETECTOR] Blocked suspicious write:\n', text.substring(0, 300));
+                alert('⚠️ Suspicious clipboard write blocked!\nLooks like a fake CAPTCHA / ClickFix attempt.\n\nDo NOT paste anything into Run (Win+R)!');
+                return Promise.reject(new DOMException('Blocked by anti-hijack script', 'NotAllowedError'));
+            }
+            return originalWrite ? originalWrite.apply(this, arguments) : Promise.resolve();
+        };
+    }
+
+    // ───────────── Legacy execCommand interception ─────────────
+    const origExec = Document.prototype.execCommand;
+    Document.prototype.execCommand = function(cmd, ...args) {
+        if (cmd?.toLowerCase() === 'copy') {
+            // Try to read what would be copied (heuristic – not 100% reliable)
+            const selection = document.getSelection();
+            const activeEl = document.activeElement;
+            let wouldBeCopied = '';
+
+            if (activeEl?.tagName === 'TEXTAREA' || activeEl?.tagName === 'INPUT') {
+                wouldBeCopied = activeEl.value.substring(activeEl.selectionStart || 0, activeEl.selectionEnd || activeEl.value.length);
+            } else if (selection?.rangeCount) {
+                wouldBeCopied = selection.toString();
+            }
+
+            if (looksMalicious(wouldBeCopied)) {
+                console.warn('[CLIPBOARD DETECTOR] Blocked suspicious copy attempt:\n', wouldBeCopied.substring(0, 300));
+                alert('⚠️ Suspicious copy blocked!\nFake verification / malware attempt detected.\n\nNever paste website instructions into Win+R!');
+                return false;
+            }
+        }
+        return origExec.apply(this, [cmd, ...args]);
+    };
+
+    console.info('Clipboard Hijack Detector active — suspicious PowerShell/mshta writes will be blocked + alerted');
+})();
