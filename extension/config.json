@@ -2,8 +2,8 @@
   "blacklist": ["alliancemedicalcenter.ca", "www.universalcarental.com", "youtube.com"],
   "clipboardPatterns": [
     "nslookup",
-	"irm",
-	"wt",
+    "irm",
+    "wt",
     "cmd",
     "net",
     "net1",
@@ -41,3 +41,4 @@
     "verification.*(run|paste|win\\+r)"
   ]
 }
+
