@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Shield Configuration</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; width: 450px; }
+    textarea { width: 100%; height: 100px; margin-top: 4px; }
+    input[type="text"] { width: 100%; padding: 6px; margin-top: 4px; }
+    button { margin-top: 15px; padding: 8px 12px; background: #0078d4; color: white; border: none; cursor: pointer; }
+    .field-group { margin-bottom: 15px; }
+  </style>
+</head>
+<body>
+  <h2>Extension Security Configurations</h2>
+  
+  <div class="field-group">
+    <label for="remoteUrl"><strong>Remote JSON Configuration URL:</strong></label>
+    <input type="text" id="remoteUrl" placeholder="https://example.com/config.json">
+  </div>
+  
+  <div class="field-group">
+    <label for="blacklistDomains"><strong>Local Blacklisted Domains (comma-separated):</strong></label>
+    <textarea id="blacklistDomains"></textarea>
+  </div>
+
+  <button id="save">Save & Apply Rules</button>
+
+  <script src="options.js"></script>
+</body>
+</html>
