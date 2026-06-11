@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "ClickFix & URL Hijack Shield",
+  "version": "1.0",
+  "description": "Protects against ClickFix attacks, blocks blacklisted domains, and audits cross-origin frames.",
+  "permissions": ["declarativeNetRequest", "storage", "alarms"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  }
+}
