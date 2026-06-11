@@ -1,5 +1,5 @@
 {
-  "blacklist": ["alliancemedicalcenter.ca", "www.universalcarental.com"],
+  "blacklist": ["alliancemedicalcenter.ca", "www.universalcarental.com", "www.youtube.com"],
   "clipboardPatterns": [
     "nslookup",
     "irm",
