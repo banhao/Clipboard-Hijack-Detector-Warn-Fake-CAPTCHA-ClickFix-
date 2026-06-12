@@ -1,7 +1,10 @@
-// Default patterns if remote/local files are empty
+// Default baseline patterns if remote configuration fetch fails on first boot
 const defaultBlacklist = [];
 
-// 1. ONLY create the alarm once when installed/updated
+// 1. Define your permanent enterprise GitHub URL as a hardcoded constant
+const MASTER_CONFIG_URL = "https://raw.githubusercontent.com/banhao/Clipboard-Hijack-Detector-Warn-Fake-CAPTCHA-ClickFix-/refs/heads/main/extension/config.json";
+
+// Create the synchronization alarm and trigger initial fetch when installed
 chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.local.set({ 
     blacklist: defaultBlacklist,
@@ -10,31 +13,29 @@ chrome.runtime.onInstalled.addListener(() => {
     updateBlockingRules();
   });
 
-  // Create alarm here so it isn't constantly reset
-  chrome.alarms.create("syncConfig", { periodInMinutes: 60 });
+  // Check the GitHub file for updates every 60 minutes
+  chrome.alarms.create("syncConfig", { periodInMinutes: 5 });
+  
+  // Run an immediate synchronization sync right now
+  fetchAndApplyRemoteConfig();
 });
 
-// 2. Use a named or static listener that persists across service worker restarts
+// Periodic alarm listener to check for updates
 chrome.alarms.onAlarm.addListener(handleAlarm);
 
 async function handleAlarm(alarm) {
   if (alarm.name === "syncConfig") {
-    console.log("Alarm triggered: Syncing remote config...");
+    console.log("Alarm triggered: Syncing remote config from master source...");
+    console.log(new Date());
     await fetchAndApplyRemoteConfig();
   }
 }
 
-// Dedicated function to handle fetching, logging, and application
+// Dedicated synchronization engine
 async function fetchAndApplyRemoteConfig() {
-  const data = await chrome.storage.local.get(["remoteConfigUrl"]);
-  if (!data.remoteConfigUrl) {
-    console.warn("[CONFIG] No remote URL configured yet.");
-    return;
-  }
-
+  // Uses the hardcoded master URL directly
   try {
-    // Added a cache-buster so updates on your network share pull instantly
-    const response = await fetch(`${data.remoteConfigUrl}?nocache=${Date.now()}`, { cache: "no-store" });
+    const response = await fetch(`${MASTER_CONFIG_URL}?nocache=${Date.now()}`, { cache: "no-store" });
     
     if (!response.ok) {
       throw new Error(`HTTP Error! Status: ${response.status}`);
@@ -48,21 +49,18 @@ async function fetchAndApplyRemoteConfig() {
         clipboardPatterns: config.clipboardPatterns
       });
       
-      console.log(`[CONFIG LOAD SUCCESS] Successfully synchronized configuration profile.\n` +
+      console.log(`[CONFIG LOAD SUCCESS] Successfully synchronized configuration profile from GitHub.\n` +
                   `- Loaded Domains: ${config.blacklist.length}\n` +
                   `- Loaded Clipboard RegEx Patterns: ${config.clipboardPatterns.length}`);
       
       updateBlockingRules();
-    } else {
-      console.warn("[CONFIG LOAD ERROR] JSON structure is missing 'blacklist' or 'clipboardPatterns' keys.", config);
     }
   } catch (err) {
-    // This will print out clear network/SSL/CORS issues if they happen
-    console.error("[CONFIG LOAD ERROR] Failed to fetch remote config from path:", data.remoteConfigUrl, "\nDetails:", err);
+    console.error("[CONFIG LOAD ERROR] Failed to fetch remote config from:", MASTER_CONFIG_URL, "\nDetails:", err);
   }
 }
 
-// 3. Keep your rule compiler function
+// Net Request Rule Compiler for Domain Blocking
 async function updateBlockingRules() {
   const data = await chrome.storage.local.get("blacklist");
   const blacklist = data.blacklist || [];
@@ -83,20 +81,19 @@ async function updateBlockingRules() {
   });
 }
 
-// Listen for forced manual sync instructions from the options page
+// Manual force sync instruction capability (e.g. from options page)
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "force_sync") {
     fetchAndApplyRemoteConfig().then(() => sendResponse({ success: true }));
-    return true; // Keep channel open for async response
+    return true; 
   }
 });
 
-// Sync immediately whenever the worker boots up or a profile wakes up
+// Synchronize immediately on workstation/browser startup or waking up
 chrome.runtime.onStartup.addListener(() => {
   fetchAndApplyRemoteConfig();
 });
 
-// Trigger a fast configuration check when a window is maximized/opened
 chrome.windows.onCreated.addListener(() => {
   fetchAndApplyRemoteConfig();
 });
