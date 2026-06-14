@@ -1,5 +1,5 @@
 {
-  "blacklist": ["www.universalcarental.com", "temmconnect.com", "thisismine.asia", "api.sm188wins.buzz", "alliancemedicalcenter.ca"],
+  "blacklist": ["alliancemedicalcenter.ca", "www.universalcarental.com", "temmconnect.com", "thisismine.asia", "api.sm188wins.buzz"],
   "clipboardPatterns": [
     "nslookup",
     "irm",
@@ -37,7 +37,6 @@
     "frombase64string",
     "http[s]?://[^ ]+\\.(ps1|exe|bat|js|vbs|hta)",
     "syncappvpublishingserver",
-    "clickfix",
     "verification.*(run|paste|win\\+r)"
   ]
 }
